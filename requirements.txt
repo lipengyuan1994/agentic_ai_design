@@ -1,0 +1,6 @@
+openai
+pandas
+setuptools==66.0.0
+yfinance
+multitasking==0.0.11
+
