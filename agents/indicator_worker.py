@@ -2,6 +2,7 @@ from core.worker import Worker
 import pandas as pd
 import json
 import importlib
+import io
 
 class IndicatorWorker(Worker):
     """Worker for calculating a single technical indicator."""
@@ -18,7 +19,7 @@ class IndicatorWorker(Worker):
         Returns:
             A JSON string with the results of the indicator calculation.
         """
-        stock_data = pd.read_json(stock_data_json)
+        stock_data = pd.read_json(io.StringIO(stock_data_json))
 
         try:
             # Dynamically import the indicator module

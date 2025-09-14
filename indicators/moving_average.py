@@ -1,31 +1,28 @@
+"""Simple moving average crossover indicator."""
+
 from .base_indicator import BaseIndicator
 import pandas as pd
 
-class MOVING_AVERAGEIndicator(BaseIndicator):
-    """Calculates the Moving Average."""
+
+class MovingAverageIndicator(BaseIndicator):
+    """Calculates 50/200 day moving average crossovers."""
 
     def calculate(self, stock_data: pd.DataFrame) -> dict:
-        """Calculates the Moving Average.
+        """Return crossover signal based on 50 and 200 day MAs."""
 
-        Args:
-            stock_data: A pandas DataFrame with historical stock data.
+        short_term_ma = stock_data["Close"].rolling(window=50).mean().iloc[-1]
+        long_term_ma = stock_data["Close"].rolling(window=200).mean().iloc[-1]
 
-        Returns:
-            A dictionary with the Moving Average signal and details.
-        """
-        # Placeholder for actual Moving Average calculation
-        # In a real implementation, you would use a library like pandas-ta.
-        short_term_ma = 155
-        long_term_ma = 150
-
-        signal = "Neutral"
         if short_term_ma > long_term_ma:
             signal = "Golden Cross"
         elif short_term_ma < long_term_ma:
             signal = "Death Cross"
+        else:
+            signal = "Neutral"
 
         return {
             "indicator": "Moving Average",
             "signal": signal,
-            "details": f"50-day MA ({short_term_ma}) has crossed above the 200-day MA ({long_term_ma})."
+            "details": f"50-day MA {short_term_ma:.2f} vs 200-day MA {long_term_ma:.2f}",
         }
+
