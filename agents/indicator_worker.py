@@ -53,8 +53,8 @@ class IndicatorWorker(Worker):
                     details=f"Unexpected indicator result type: {type(result)}",
                 )
         except (ImportError, AttributeError) as e:
-            return IndicatorResult(
-                indicator=self.indicator_name.title(),
-                signal="Error",
-                details=f"Could not calculate indicator: {e}",
-            )
+            return json.dumps({
+                "indicator": self.indicator_name,
+                "signal": "Error",
+                "details": f"Could not calculate indicator: {e}"
+            })

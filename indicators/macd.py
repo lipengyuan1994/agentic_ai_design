@@ -1,31 +1,31 @@
+"""Moving Average Convergence Divergence indicator."""
+
 from .base_indicator import BaseIndicator
 import pandas as pd
 
+
 class MACDIndicator(BaseIndicator):
-    """Calculates the Moving Average Convergence Divergence (MACD)."""
+    """Compute MACD line and signal line crossover."""
 
     def calculate(self, stock_data: pd.DataFrame) -> dict:
-        """Calculates the MACD.
+        ema12 = stock_data["Close"].ewm(span=12, adjust=False).mean()
+        ema26 = stock_data["Close"].ewm(span=26, adjust=False).mean()
+        macd_line = ema12 - ema26
+        signal_line = macd_line.ewm(span=9, adjust=False).mean()
 
-        Args:
-            stock_data: A pandas DataFrame with historical stock data.
+        macd_value = macd_line.iloc[-1]
+        signal_value = signal_line.iloc[-1]
 
-        Returns:
-            A dictionary with the MACD signal and details.
-        """
-        # Placeholder for actual MACD calculation
-        # In a real implementation, you would use a library like pandas-ta.
-        macd_line = 1.5
-        signal_line = 1.2
-
-        signal = "Neutral"
-        if macd_line > signal_line:
+        if macd_value > signal_value:
             signal = "Bullish Crossover"
-        elif macd_line < signal_line:
+        elif macd_value < signal_value:
             signal = "Bearish Crossover"
+        else:
+            signal = "Neutral"
 
         return {
             "indicator": "MACD",
             "signal": signal,
-            "details": f"MACD line ({macd_line}) has crossed above the signal line ({signal_line})."
+            "details": f"MACD {macd_value:.2f} vs signal {signal_value:.2f}",
         }
+
