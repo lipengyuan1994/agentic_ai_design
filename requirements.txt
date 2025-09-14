@@ -1,6 +1,9 @@
 openai
 pandas
+yfinance
+pydantic
+pandas
 setuptools==66.0.0
 yfinance
 multitasking==0.0.11
-
+pydantic>=2.0

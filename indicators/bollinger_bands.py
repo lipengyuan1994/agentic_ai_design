@@ -1,7 +1,7 @@
 from .base_indicator import BaseIndicator
 import pandas as pd
 
-class BOLLINGER_BANDSIndicator(BaseIndicator):
+class BollingerBandsIndicator(BaseIndicator):
     """Calculates Bollinger Bands."""
 
     def calculate(self, stock_data: pd.DataFrame) -> dict:

@@ -1,7 +1,7 @@
 from .base_indicator import BaseIndicator
 import pandas as pd
 
-class MOVING_AVERAGEIndicator(BaseIndicator):
+class MovingAverageIndicator(BaseIndicator):
     """Calculates the Moving Average."""
 
     def calculate(self, stock_data: pd.DataFrame) -> dict:

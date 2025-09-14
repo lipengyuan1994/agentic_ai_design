@@ -1,4 +1,5 @@
 from core.worker import Worker
+from core.models import IndicatorResult
 import pandas as pd
 import json
 import importlib
@@ -9,7 +10,7 @@ class IndicatorWorker(Worker):
     def __init__(self, indicator_name: str):
         self.indicator_name = indicator_name.lower()
 
-    def run(self, stock_data_json: str) -> str:
+    def run(self, stock_data_or_json) -> IndicatorResult:
         """Runs the indicator calculation.
 
         Args:
@@ -18,7 +19,11 @@ class IndicatorWorker(Worker):
         Returns:
             A JSON string with the results of the indicator calculation.
         """
-        stock_data = pd.read_json(stock_data_json)
+        # Accept a DataFrame directly (preferred), or a JSON string for backward compatibility
+        if isinstance(stock_data_or_json, pd.DataFrame):
+            stock_data = stock_data_or_json
+        else:
+            stock_data = pd.read_json(stock_data_or_json)
 
         try:
             # Dynamically import the indicator module
@@ -36,11 +41,20 @@ class IndicatorWorker(Worker):
 
             # Calculate the indicator
             result = indicator_instance.calculate(stock_data)
-
-            return json.dumps(result)
+            # Normalize into a structured IndicatorResult
+            if isinstance(result, dict):
+                return IndicatorResult(**result)
+            elif isinstance(result, IndicatorResult):
+                return result
+            else:
+                return IndicatorResult(
+                    indicator=self.indicator_name.title(),
+                    signal="Error",
+                    details=f"Unexpected indicator result type: {type(result)}",
+                )
         except (ImportError, AttributeError) as e:
-            return json.dumps({
-                "indicator": self.indicator_name,
-                "signal": "Error",
-                "details": f"Could not calculate indicator: {e}"
-            })
+            return IndicatorResult(
+                indicator=self.indicator_name.title(),
+                signal="Error",
+                details=f"Could not calculate indicator: {e}",
+            )
