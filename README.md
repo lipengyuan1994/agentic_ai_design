@@ -1,16 +1,19 @@
-# Agentic AI Design – Technical Analysis Orchestrator
+# Agentic AI Design – Stock Analysis Orchestrator
 
-A small, agent-style Python project that fetches historical stock data, computes a set of technical indicators with worker agents, and produces a human-readable summary report. The summary is generated via OpenAI if available, with a clear local fallback when it isn’t.
+A small, agent-style Python project that fetches historical stock data, computes a set of technical indicators with worker agents, and produces a human-readable summary report. It also includes a value analysis worker that evaluates fundamentals and valuation. Summaries are generated via OpenAI if available, with a clear local fallback when it isn’t.
 
 ## What It Does
 - Fetches historical price data for a ticker (via `yfinance`) and caches it in `data_hist/`.
 - Spawns worker agents to compute indicators concurrently.
 - Summarizes results using OpenAI (GPT-4 Turbo) when configured, or a simple local fallback summary otherwise.
 - Uses Pydantic models for structured outputs.
+- Uses an optional LLM-based orchestrator to plan which indicators to run and why (falls back to a deterministic plan when OpenAI is unavailable).
+- Supports value analysis via a dedicated worker and orchestrator.
+- Fetches recent news headlines and stores them in a Markdown report; also creates a final combined report.
 
 ## Repository Structure
 - `main.py` – CLI entry point.
-- `agents/` – Orchestrator and indicator worker.
+- `agents/` – Orchestrators and workers (technical indicators, value analysis).
 - `core/` – Minimal abstract base classes for orchestrator/worker.
 - `data/` – Project data (not required for running; cache lives in `data_hist/`).
 - `data_hist/` – CSV cache for historical data (auto-created).
@@ -28,6 +31,7 @@ A small, agent-style Python project that fetches historical stock data, computes
 - Environment variable: `OPENAI_API_KEY`
 - Model: `gpt-4-turbo`
 - Behavior: If the key is missing or any API call fails, the orchestrator falls back to a local, deterministic summary assembled from indicator outputs.
+  - The orchestrator also attempts an LLM planning step to choose/sequence indicators with rationale; this planning step similarly falls back to a deterministic plan.
 
 ## Quick Start
 1) Create and activate a virtual environment (recommended)
@@ -46,7 +50,7 @@ pip install -r requirements.txt
 export OPENAI_API_KEY=your_api_key_here  # Windows PowerShell: $Env:OPENAI_API_KEY="your_api_key_here"
 ```
 
-4) Run
+4) Run (defaults to both technical and value)
 ```
 python main.py AAPL
 ```
@@ -56,8 +60,27 @@ python main.py AAPL
 python main.py AAPL --indicators RSI MACD
 ```
 
+Value-only analysis:
+```
+python main.py AAPL --analysis value
+```
+
+Run only one type if desired:
+```
+python main.py AAPL --analysis technical
+python main.py AAPL --analysis value
+```
+
+Include recent news headlines (works with any mode):
+```
+python main.py AAPL --news
+```
+
 5) Output
-- A Markdown report is written to `reports/<TICKER>_<YYYY-MM-DD>.md`
+- Technical: `reports/<TICKER>_<YYYYMMDD>_technical.md`
+- Value: `reports/<TICKER>_<YYYYMMDD>_value.md`
+- News: `reports/<TICKER>_news_<YYYYMMDD>.md`
+- Final combined: `reports/<TICKER>_<YYYYMMDD>_final.md`
 
 ## Data Fetching & Caching
 - Price data is fetched with `yfinance` and cached to `data_hist/<TICKER>_<period>.csv`.
@@ -113,3 +136,11 @@ python main.py TSLA --indicators "Bollinger Bands" RSI
 ```
 
 The resulting report appears in `reports/` with the ticker and current date.
+
+## Value Analysis
+- Worker: `agents/value_analysis_worker.py` → class `ValueAnalysisWorker`
+- Orchestrator: `agents/value_analysis_orchestrator.py` → class `ValueAnalysisOrchestrator`
+- Uses yfinance fundamentals (e.g., P/E, P/B, margins, ROE, revenue growth, FCF yield, leverage) to compute a heuristic score and signal:
+  - Signals: Undervalued/Quality, Reasonable, Mixed/Neutral, Overvalued/Risky
+- Report path: `reports/<TICKER>_<YYYYMMDD>_value.md`
+  - If OpenAI is configured, a concise Markdown summary is generated; otherwise a local fallback is used.

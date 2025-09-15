@@ -5,21 +5,27 @@ import pandas as pd
 
 
 class RSIIndicator(BaseIndicator):
-    """Compute the 14-day RSI and produce a signal."""
+    """Compute RSI and produce a signal, honoring params like period/thresholds."""
 
-    def calculate(self, stock_data: pd.DataFrame) -> dict:
-        delta = stock_data["Close"].diff()
+    def calculate(self, stock_data: pd.DataFrame, params: dict | None = None) -> dict:
+        p = params or {}
+        period = int(p.get("period", 14))
+        oversold = float(p.get("oversold", 30))
+        overbought = float(p.get("overbought", 70))
+
+        close = stock_data["Close"].astype(float)
+        delta = close.diff()
         up = delta.clip(lower=0)
         down = -delta.clip(upper=0)
-        roll_up = up.rolling(14).mean()
-        roll_down = down.rolling(14).mean()
+        roll_up = up.rolling(period).mean()
+        roll_down = down.rolling(period).mean()
         rs = roll_up / roll_down
         rsi = 100 - (100 / (1 + rs))
-        rsi_value = rsi.iloc[-1]
+        rsi_value = float(rsi.iloc[-1])
 
-        if rsi_value < 30:
+        if rsi_value < oversold:
             signal = "Oversold"
-        elif rsi_value > 70:
+        elif rsi_value > overbought:
             signal = "Overbought"
         else:
             signal = "Neutral"
@@ -27,6 +33,5 @@ class RSIIndicator(BaseIndicator):
         return {
             "indicator": "RSI",
             "signal": signal,
-            "details": f"RSI is currently at {rsi_value:.2f}",
+            "details": f"RSI(period={period}) is {rsi_value:.2f}; thresholds {oversold}/{overbought}",
         }
-

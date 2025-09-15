@@ -1,31 +1,31 @@
 from .base_indicator import BaseIndicator
 import pandas as pd
 
+
 class MovingAverageIndicator(BaseIndicator):
-    """Calculates the Moving Average."""
+    """Calculates Moving Averages and crossovers, honoring params."""
 
-    def calculate(self, stock_data: pd.DataFrame) -> dict:
-        """Calculates the Moving Average.
+    def calculate(self, stock_data: pd.DataFrame, params: dict | None = None) -> dict:
+        p = params or {}
+        short_window = int(p.get("short_window", 50))
+        long_window = int(p.get("long_window", 200))
 
-        Args:
-            stock_data: A pandas DataFrame with historical stock data.
+        close = stock_data["Close"].astype(float)
+        short_ma = close.rolling(short_window).mean()
+        long_ma = close.rolling(long_window).mean()
 
-        Returns:
-            A dictionary with the Moving Average signal and details.
-        """
-        # Placeholder for actual Moving Average calculation
-        # In a real implementation, you would use a library like pandas-ta.
-        short_term_ma = 155
-        long_term_ma = 150
+        s_val = float(short_ma.iloc[-1])
+        l_val = float(long_ma.iloc[-1])
 
-        signal = "Neutral"
-        if short_term_ma > long_term_ma:
+        if s_val > l_val:
             signal = "Golden Cross"
-        elif short_term_ma < long_term_ma:
+        elif s_val < l_val:
             signal = "Death Cross"
+        else:
+            signal = "Neutral"
 
         return {
             "indicator": "Moving Average",
             "signal": signal,
-            "details": f"50-day MA ({short_term_ma}) has crossed above the 200-day MA ({long_term_ma})."
+            "details": f"MA(short={short_window})={s_val:.2f} vs MA(long={long_window})={l_val:.2f}",
         }

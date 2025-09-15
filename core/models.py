@@ -22,10 +22,32 @@ class SummaryResult(BaseModel):
     model: Optional[str] = Field(None, description="Model used, when applicable")
 
 
+class OrchestratorPlan(BaseModel):
+    ticker: str
+    period: str = "1y"
+    requested_indicators: Optional[List[str]] = None
+    plan_indicators: List[str] = Field(
+        default_factory=list, description="Ordered list of indicator names to execute"
+    )
+    class IndicatorPlanItem(BaseModel):
+        name: str = Field(..., description="Indicator name, e.g., RSI, MACD")
+        params: Dict[str, Any] = Field(
+            default_factory=dict, description="Per-indicator parameters (e.g., window sizes)"
+        )
+
+    plan_items: List[IndicatorPlanItem] = Field(
+        default_factory=list,
+        description="Ordered items with per-indicator parameters",
+    )
+    rationale: Optional[str] = Field(None, description="Why these indicators and ordering")
+    strategy: Optional[str] = Field(None, description="High-level plan/approach")
+    max_workers: Optional[int] = Field(None, description="Suggested parallelism cap")
+
+
 class AnalysisReport(BaseModel):
     ticker: str
     period: str = "1y"
     generated_at: datetime
     indicators: List[IndicatorResult]
     summary: SummaryResult
-
+    plan: Optional[OrchestratorPlan] = None
